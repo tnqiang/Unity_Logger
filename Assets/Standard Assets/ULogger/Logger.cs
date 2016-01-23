@@ -49,7 +49,7 @@ namespace Log
 		[Conditional("LOG_DETAIL")]	
 		public static void Info (object message)
 		{
-			if (logLevel >= LogLevel.INFO)
+			if (logLevel < LogLevel.WARNING)
 			{
 				string stackInfo = new StackTrace (false).ToString ();
 				UnityEngine.Debug.Log (message);
@@ -58,9 +58,9 @@ namespace Log
 		}
 
 		[Conditional("LOG_DETAIL")]	
-		public static void Warning (object message, Object context)
+		public static void Warning (object message)
 		{
-			if (logLevel > LogLevel.INFO)
+			if (logLevel < LogLevel.ERROR)
 			{
 				string stackInfo = new StackTrace (false).ToString ();
 				UnityEngine.Debug.LogWarning (message);
@@ -69,9 +69,9 @@ namespace Log
 		}
 
 		[Conditional("LOG_DETAIL")]	
-		public static void Error (object message, Object context)
+		public static void Error (object message)
 		{
-			if (logLevel > LogLevel.WARNING)
+			if (logLevel <= LogLevel.ERROR)
 			{
 				string stackInfo = new StackTrace (false).ToString ();
 				UnityEngine.Debug.LogError (message);
