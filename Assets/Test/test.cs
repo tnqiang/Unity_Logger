@@ -16,5 +16,6 @@ public class test : MonoBehaviour {
 			yield return new WaitForSeconds(1);
 			Logger.Info("log: " + i);
 		}
+		yield return null;
 	}
 }
