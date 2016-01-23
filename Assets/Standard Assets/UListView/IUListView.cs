@@ -99,7 +99,9 @@ namespace NSUListView
 
 			// set the item postion and data
 			int startIndex = GetStartIndex ();
-			for (int i=0; i<GetMaxShowItemNum() && startIndex + i < lstData.Count; ++i)
+			if (startIndex < 0)	startIndex = 0;
+
+			for (int i=0; i<GetCurrentShowItemNum(); ++i)
 			{
 				GameObject go = GetItemGameObject(i);
 				RectTransform trans = go.transform as RectTransform;
@@ -115,6 +117,17 @@ namespace NSUListView
 			HideNonuseableItems ();
 		}
 
+		/// <summary>
+		/// Gets the current show item number.
+		/// </summary>
+		/// <returns>The current show item number.</returns>
+		protected int 				GetCurrentShowItemNum()
+		{
+			int startIndex = GetStartIndex ();
+			int maxShowNum = GetMaxShowItemNum ();
+			int maxItemNum = lstData.Count - startIndex;
+			return maxShowNum < maxItemNum ? maxShowNum : maxItemNum;
+		}
 		/// <summary>
 		/// Gets the max show item number.
 		/// </summary>
