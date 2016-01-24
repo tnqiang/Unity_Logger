@@ -29,7 +29,24 @@ namespace Log
 			}
 		}
 		static LogCollector instance;
-		
+
+		public static void Show()
+		{
+			LogCollector collector = LogCollector.pInstance;
+			if (false == collector.gameObject.activeSelf) 
+			{
+				collector.gameObject.SetActive(true);
+			}
+		}
+
+		public static void Hide()
+		{
+			LogCollector collector = LogCollector.pInstance;
+			if (collector.gameObject.activeSelf) 
+			{
+				collector.gameObject.SetActive(false);
+			}
+		}
 		#endregion
 
 		public IUListView				listView;

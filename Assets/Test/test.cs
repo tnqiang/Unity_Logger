@@ -6,7 +6,7 @@ public class test : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		LogCollector collerctor = LogCollector.pInstance;
+		LogCollector.Show ();
 		StartCoroutine (GenerateLog ());
 	}
 
