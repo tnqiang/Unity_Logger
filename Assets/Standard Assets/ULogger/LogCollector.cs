@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using NSUListView;
@@ -49,18 +50,22 @@ namespace Log
 		}
 		#endregion
 
-		public IUListView				listView;
+		public LoggerListView 			listView;
+		public Text						txtDetail;
 		private List<Logger.LogDetail> 	m_lstLogDetail;
 
 		private void Initialize()
 		{
 			Logger.OnLogOccur += OnLogOccur;
 			m_lstLogDetail = new List<Logger.LogDetail> ();
+			LoggerListView listView = GetComponentInChildren<LoggerListView> ();
+			listView.OnClicked += OnClick;
 		}
 
 		void OnDestroy()
 		{
 			Logger.OnLogOccur -= OnLogOccur;
+			listView.OnClicked -= OnClick;
 			m_lstLogDetail.Clear ();
 		}
 
@@ -81,6 +86,14 @@ namespace Log
 				lstData.Add(m_lstLogDetail[i]);
 			}
 			listView.SetData (lstData);
+		}
+
+		private void OnClick(int index)
+		{
+			if (index != -1 && m_lstLogDetail.Count > index) 
+			{
+				txtDetail.text = m_lstLogDetail[index].content + m_lstLogDetail[index].content;
+			}
 		}
 	}
 }
