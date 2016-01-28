@@ -4,18 +4,25 @@ using System.Collections;
 using System.Collections.Generic;
 using NSUListView;
 using System.Text.RegularExpressions;
+using System.IO;
+using System;
 
 namespace Log
 {
 	public class LogCollector : MonoBehaviour
 	{
 		#region Singleton
-		public static LogCollector pInstance {
-			get {
+		public static LogCollector pInstance 
+		{
+			get 
+			{
 				if (instance == null)
-					instance = (LogCollector)Object.FindObjectOfType (typeof(LogCollector));
+				{
+					instance = (LogCollector)UnityEngine.Object.FindObjectOfType (typeof(LogCollector));
+				}
 				
-				if (instance == null) {
+				if (instance == null) 
+				{
 					GameObject prefab = Resources.Load ("LogCollector") as GameObject;
 					GameObject GO = GameObject.Instantiate (prefab) as GameObject;
 					//GO.hideFlags = GO.hideFlags | HideFlags.HideAndDontSave;	// Only hide it if this manager was autocreated
@@ -39,6 +46,8 @@ namespace Log
 		private bool					m_logWaringEnable;
 		private bool					m_logErrorEnable;
 		private string					m_regEx;
+		private string					m_logFileName;
+		private StreamWriter			m_fileWriter;
 
 		public static void Show ()
 		{
@@ -53,6 +62,14 @@ namespace Log
 			LogCollector collector = LogCollector.pInstance;
 			if (collector.gameObject.activeSelf) {
 				collector.gameObject.SetActive (false);
+			}
+		}
+
+		public void ShowInBrowser()
+		{
+			if (!string.IsNullOrEmpty (m_logFileName)) 
+			{
+				Application.OpenURL (m_logFileName);
 			}
 		}
 
@@ -96,6 +113,7 @@ namespace Log
 			{
 				RemoveLogFilter(Logger.LogLevel.ERROR);
 			}
+			ShowInBrowser ();
 		}
 
 		public void OnFilterChange (string regEx)
@@ -150,6 +168,7 @@ namespace Log
 			m_logWaringEnable = true;
 			m_logErrorEnable = true;
 			m_regEx = string.Empty;
+			CreateLogFile ();
 		}
 
 		void OnDestroy ()
@@ -157,6 +176,7 @@ namespace Log
 			Logger.OnLogOccur -= OnLogOccur;
 			listView.OnClicked -= OnClick;
 			m_lstLogDetail.Clear ();
+			CloseLogFile ();
 		}
 
 		private void OnLogOccur (Logger.LogDetail logDetail)
@@ -165,6 +185,7 @@ namespace Log
 			{
 				m_lstLogDetail.Add (logDetail);
 				RefreshView ();
+				AppendToFile(logDetail);
 			}
 		}
 
@@ -189,16 +210,13 @@ namespace Log
 			switch (logDetail.level) 
 			{
 			case Logger.LogLevel.INFO:
-				if (m_logInfoEnable)
-					ret = true;
+				if (m_logInfoEnable) ret = true;
 				break;
 			case Logger.LogLevel.WARNING:
-				if (m_logWaringEnable)
-					ret = true;
+				if (m_logWaringEnable) ret = true;
 				break;
 			case Logger.LogLevel.ERROR:
-				if (m_logErrorEnable)
-					ret = true;
+				if (m_logErrorEnable) ret = true;
 				break;
 			}
 
@@ -218,6 +236,46 @@ namespace Log
 			{
 				txtDetail.text = m_lstFilteredLog [index].content 
 					+ m_lstFilteredLog [index].content;
+			}
+		}
+
+		private void CreateLogFile()
+		{
+			DateTime now = DateTime.Now;
+			m_logFileName = Application.persistentDataPath + "/log_" + now.ToString ("yyyy_mm_dd__hh_mm_ss") + ".html";
+			m_fileWriter = new StreamWriter (m_logFileName);
+		}
+
+		private void AppendToFile(Logger.LogDetail logDetail)
+		{
+			string logLine = "<p><font color=\"log_color\">log_content</font></p>\n";
+			string color = "black";
+			if (null != m_fileWriter)
+			{
+				switch(logDetail.level)
+				{
+				case Logger.LogLevel.INFO:
+					color = "black";
+					break;
+				case Logger.LogLevel.WARNING:
+					color = "maroon";
+					break;
+				case Logger.LogLevel.ERROR:
+					color = "red";
+					break;
+				}
+				logLine = logLine.Replace ("log_color", color);
+				logLine = logLine.Replace ("log_content", logDetail.content);
+				m_fileWriter.WriteLine(logLine);
+			}
+		}
+
+		private void CloseLogFile()
+		{
+			if (null != m_fileWriter) 
+			{
+				m_fileWriter.Close();
+				m_fileWriter = null;
 			}
 		}
 	}
