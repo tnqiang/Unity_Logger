@@ -3,96 +3,221 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using NSUListView;
+using System.Text.RegularExpressions;
 
 namespace Log
 {
 	public class LogCollector : MonoBehaviour
 	{
 		#region Singleton
-		public static LogCollector pInstance
-		{
-			get
-			{
+		public static LogCollector pInstance {
+			get {
 				if (instance == null)
-					instance = (LogCollector)Object.FindObjectOfType(typeof(LogCollector));
+					instance = (LogCollector)Object.FindObjectOfType (typeof(LogCollector));
 				
-				if (instance == null)
-				{
-					GameObject prefab = Resources.Load("LogCollector") as GameObject;
-					GameObject GO = GameObject.Instantiate(prefab) as GameObject;
+				if (instance == null) {
+					GameObject prefab = Resources.Load ("LogCollector") as GameObject;
+					GameObject GO = GameObject.Instantiate (prefab) as GameObject;
 					//GO.hideFlags = GO.hideFlags | HideFlags.HideAndDontSave;	// Only hide it if this manager was autocreated
-					instance = GO.GetComponent<LogCollector>();
-					instance.Initialize();
+					instance = GO.GetComponent<LogCollector> ();
+					instance.Initialize ();
 				}
 				
-				DontDestroyOnLoad(instance.gameObject);
+				DontDestroyOnLoad (instance.gameObject);
 				return instance;
 			}
 		}
+
 		static LogCollector instance;
-
-		public static void Show()
-		{
-			LogCollector collector = LogCollector.pInstance;
-			if (false == collector.gameObject.activeSelf) 
-			{
-				collector.gameObject.SetActive(true);
-			}
-		}
-
-		public static void Hide()
-		{
-			LogCollector collector = LogCollector.pInstance;
-			if (collector.gameObject.activeSelf) 
-			{
-				collector.gameObject.SetActive(false);
-			}
-		}
 		#endregion
 
 		public LoggerListView 			listView;
 		public Text						txtDetail;
 		private List<Logger.LogDetail> 	m_lstLogDetail;
+		private List<Logger.LogDetail> 	m_lstFilteredLog;
+		private	bool					m_logInfoEnable;
+		private bool					m_logWaringEnable;
+		private bool					m_logErrorEnable;
+		private string					m_regEx;
 
-		private void Initialize()
+		public static void Show ()
+		{
+			LogCollector collector = LogCollector.pInstance;
+			if (false == collector.gameObject.activeSelf) {
+				collector.gameObject.SetActive (true);
+			}
+		}
+		
+		public static void Hide ()
+		{
+			LogCollector collector = LogCollector.pInstance;
+			if (collector.gameObject.activeSelf) {
+				collector.gameObject.SetActive (false);
+			}
+		}
+
+		public void Clear ()
+		{
+			m_lstLogDetail.Clear ();
+			RefreshView ();
+		}
+		 
+		public void OnFileterChangeInfo(bool state)
+		{
+			if (state) 
+			{
+				AddLogFilter (Logger.LogLevel.INFO);
+			} 
+			else 
+			{
+				RemoveLogFilter(Logger.LogLevel.INFO);
+			}
+		}
+
+		public void OnFileterChangeWarning(bool state)
+		{
+			if (state) 
+			{
+				AddLogFilter (Logger.LogLevel.WARNING);
+			} 
+			else 
+			{
+				RemoveLogFilter(Logger.LogLevel.WARNING);
+			}
+		}
+
+		public void OnFileterChangeError(bool state)
+		{
+			if (state) 
+			{
+				AddLogFilter (Logger.LogLevel.ERROR);
+			} 
+			else 
+			{
+				RemoveLogFilter(Logger.LogLevel.ERROR);
+			}
+		}
+
+		public void OnFilterChange (string regEx)
+		{
+			m_regEx = regEx;
+			RefreshView ();
+		}
+
+		private void AddLogFilter (Logger.LogLevel logLevel)
+		{
+			switch (logLevel) 
+			{
+			case Logger.LogLevel.INFO:
+				m_logInfoEnable = true;
+				break;
+			case Logger.LogLevel.WARNING:
+				m_logWaringEnable = true;
+				break;
+			case Logger.LogLevel.ERROR:
+				m_logErrorEnable = true;
+				break;
+			}
+			Debug.Log ("logLevel: " + logLevel);
+			RefreshView ();
+		}
+
+		private void RemoveLogFilter (Logger.LogLevel logLevel)
+		{
+			switch (logLevel) 
+			{
+			case Logger.LogLevel.INFO:
+				m_logInfoEnable = false;
+				break;
+			case Logger.LogLevel.WARNING:
+				m_logWaringEnable = false;
+				break;
+			case Logger.LogLevel.ERROR:
+				m_logErrorEnable = false;
+				break;
+			}
+			RefreshView ();
+		}
+
+		private void Initialize ()
 		{
 			Logger.OnLogOccur += OnLogOccur;
 			m_lstLogDetail = new List<Logger.LogDetail> ();
+			m_lstFilteredLog = new List<Logger.LogDetail> ();
 			LoggerListView listView = GetComponentInChildren<LoggerListView> ();
 			listView.OnClicked += OnClick;
+			m_logInfoEnable = true;
+			m_logWaringEnable = true;
+			m_logErrorEnable = true;
+			m_regEx = string.Empty;
 		}
 
-		void OnDestroy()
+		void OnDestroy ()
 		{
 			Logger.OnLogOccur -= OnLogOccur;
 			listView.OnClicked -= OnClick;
 			m_lstLogDetail.Clear ();
 		}
 
-		private void OnLogOccur(Logger.LogDetail logDetail)
+		private void OnLogOccur (Logger.LogDetail logDetail)
 		{
 			if (null != logDetail) 
 			{
-				m_lstLogDetail.Add(logDetail);
-				RefreshView();
+				m_lstLogDetail.Add (logDetail);
+				RefreshView ();
 			}
 		}
 
-		private void RefreshView()
+		private void RefreshView ()
 		{
 			List<object> lstData = new List<object> ();
+			m_lstFilteredLog.Clear ();
 			for (int i=0; i<m_lstLogDetail.Count; ++i) 
 			{
-				lstData.Add(m_lstLogDetail[i]);
+				if (IsLogFiltered (m_lstLogDetail [i])) 
+				{
+					m_lstFilteredLog.Add (m_lstLogDetail [i]);
+					lstData.Add (m_lstLogDetail [i]);
+				}
 			}
 			listView.SetData (lstData);
 		}
 
-		private void OnClick(int index)
+		private bool IsLogFiltered (Logger.LogDetail logDetail)
 		{
-			if (index != -1 && m_lstLogDetail.Count > index) 
+			bool ret = false;
+			switch (logDetail.level) 
 			{
-				txtDetail.text = m_lstLogDetail[index].content + m_lstLogDetail[index].content;
+			case Logger.LogLevel.INFO:
+				if (m_logInfoEnable)
+					ret = true;
+				break;
+			case Logger.LogLevel.WARNING:
+				if (m_logWaringEnable)
+					ret = true;
+				break;
+			case Logger.LogLevel.ERROR:
+				if (m_logErrorEnable)
+					ret = true;
+				break;
+			}
+
+			// reg compare
+			if (!string.IsNullOrEmpty (m_regEx) && ret) 
+			{
+				Regex regex = new Regex (m_regEx);
+				ret = regex.IsMatch (logDetail.content);
+			}
+
+			return ret;
+		}
+
+		private void OnClick (int index)
+		{
+			if (index != -1 && m_lstFilteredLog.Count > index) 
+			{
+				txtDetail.text = m_lstFilteredLog [index].content 
+					+ m_lstFilteredLog [index].content;
 			}
 		}
 	}
