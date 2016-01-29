@@ -5,8 +5,10 @@ using Log;
 public class test : MonoBehaviour {
 
 	// Use this for initialization
-	void Start () {
-		LogCollector.Show ();
+	void Start () 
+	{
+		LogCollector.Init ();
+		LogCollector.pInstance.ShowInUI ();
 		StartCoroutine (GenerateLog ());
 	}
 

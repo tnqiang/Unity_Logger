@@ -27,7 +27,6 @@ namespace Log
 					GameObject GO = GameObject.Instantiate (prefab) as GameObject;
 					//GO.hideFlags = GO.hideFlags | HideFlags.HideAndDontSave;	// Only hide it if this manager was autocreated
 					instance = GO.GetComponent<LogCollector> ();
-					instance.Initialize ();
 				}
 				
 				DontDestroyOnLoad (instance.gameObject);
@@ -49,24 +48,37 @@ namespace Log
 		private string					m_logFileName;
 		private StreamWriter			m_fileWriter;
 
-		public static void Show ()
+		public static void Init()
+		{
+			LogCollector instance = LogCollector.pInstance;
+			instance.DoInit ();
+			instance.HideUI ();
+		}
+
+		public void ShowInUI ()
 		{
 			LogCollector collector = LogCollector.pInstance;
-			if (false == collector.gameObject.activeSelf) {
+			if (false == collector.gameObject.activeSelf) 
+			{
 				collector.gameObject.SetActive (true);
 			}
 		}
 		
-		public static void Hide ()
+		public void HideUI ()
 		{
 			LogCollector collector = LogCollector.pInstance;
-			if (collector.gameObject.activeSelf) {
+			if (collector.gameObject.activeSelf) 
+			{
 				collector.gameObject.SetActive (false);
 			}
 		}
 
 		public void ShowInBrowser()
 		{
+			if (null != m_fileWriter) 
+			{
+				m_fileWriter.Flush();
+			}
 			if (!string.IsNullOrEmpty (m_logFileName)) 
 			{
 				Application.OpenURL (m_logFileName);
@@ -157,7 +169,7 @@ namespace Log
 			RefreshView ();
 		}
 
-		private void Initialize ()
+		private void DoInit ()
 		{
 			Logger.OnLogOccur += OnLogOccur;
 			m_lstLogDetail = new List<Logger.LogDetail> ();
@@ -224,7 +236,7 @@ namespace Log
 			if (!string.IsNullOrEmpty (m_regEx) && ret) 
 			{
 				Regex regex = new Regex (m_regEx);
-				ret = regex.IsMatch (logDetail.content);
+				ret = regex.IsMatch (logDetail.userLog);
 			}
 
 			return ret;
@@ -234,8 +246,8 @@ namespace Log
 		{
 			if (index != -1 && m_lstFilteredLog.Count > index) 
 			{
-				txtDetail.text = m_lstFilteredLog [index].content 
-					+ m_lstFilteredLog [index].content;
+				txtDetail.text = m_lstFilteredLog [index].detail 
+					+ m_lstFilteredLog [index].detail;
 			}
 		}
 
@@ -265,7 +277,7 @@ namespace Log
 					break;
 				}
 				logLine = logLine.Replace ("log_color", color);
-				logLine = logLine.Replace ("log_content", logDetail.content);
+				logLine = logLine.Replace ("log_content", logDetail.detail);
 				m_fileWriter.WriteLine(logLine);
 			}
 		}

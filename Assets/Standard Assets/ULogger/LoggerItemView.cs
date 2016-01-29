@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using NSUListView;
@@ -15,7 +15,7 @@ namespace Log
 		public override void SetData (object data)
 		{
 			Logger.LogDetail logDetail = data as Logger.LogDetail;
-			loggerText.text = logDetail.content;
+			loggerText.text = logDetail.detail;
 			switch (logDetail.level) 
 			{
 			case Logger.LogLevel.INFO:
