@@ -24,6 +24,8 @@ namespace NSUListView
 		protected Vector2			scrollRectSize;
 		protected int				lastStartInex = 0;
 		protected List<object>		lstData;
+		protected Vector2			leftTopCorner = Vector2.zero;
+		private bool				leftTopCornerInit = false;
 
 		public virtual void Init()
 		{
@@ -65,7 +67,6 @@ namespace NSUListView
 				Image image = gameObject.AddComponent(typeof(Image)) as Image;
 				image.color = new Color32(0, 0, 0, 5);
 				gameObject.AddComponent(typeof(Mask));
-
 			}
 		}
 
@@ -117,6 +118,14 @@ namespace NSUListView
 
 			// dont show the extra items shown before
 			HideNonuseableItems ();
+
+			// set the progress: 
+			int dataCount = GetDataCount();
+			dataCount -= (GetMaxShowItemNum ()-2);
+			if (dataCount < 1) dataCount = 1;
+			float progress = (startIndex + 1)/(float)dataCount;
+			progress = Mathf.Clamp01(progress);
+			OnProgress(progress);
 		}
 
 		/// <summary>
@@ -132,17 +141,34 @@ namespace NSUListView
 		}
 
 		/// <summary>
+		/// Gets the top left corner screen point.
+		/// </summary>
+		/// <returns>The top left corner screen point.</returns>
+		private Vector2 GetTopLeftCornerScreenPoint()
+		{
+			if (false == leftTopCornerInit) 
+			{
+				RectTransform rectTrans = scrollRect.transform as RectTransform;
+				Vector3[] corners = new Vector3[4];
+				rectTrans.GetWorldCorners (corners);
+				Canvas canvas = GetComponentInParent<Canvas> ();
+				if (null != canvas && null != canvas.worldCamera && RenderMode.ScreenSpaceOverlay != canvas.renderMode) {
+					Camera cam = canvas.worldCamera;
+					corners [1] = cam.WorldToScreenPoint (corners [1]);
+				}
+				leftTopCorner = new Vector2 (corners [1].x, corners [1].y);
+			}
+			return leftTopCorner;
+		}
+
+		/// <summary>
 		/// Raises the pointer enter event.
 		/// </summary>
 		/// <param name="eventData">Event data.</param>
 		public void OnPointerClick(PointerEventData eventData)
 		{
-			RectTransform rectTrans = scrollRect.transform as RectTransform;
-			Vector3[] corners = new Vector3[4];
-			rectTrans.GetWorldCorners (corners);
-
 			//get the pos relative to left-top corner of the scrollview
-			Vector2 clickPos =  eventData.position - new Vector2 (corners [1].x, corners [1].y);
+			Vector2 clickPos =  eventData.position - GetTopLeftCornerScreenPoint();
 			Vector2 anchorPosition = -content.anchoredPosition;
 
 			anchorPosition += clickPos;
@@ -172,6 +198,25 @@ namespace NSUListView
 		/// <param name="pos">Position.</param>
 		public virtual void OnClick(int index)
 		{
+		}
+
+		/// <summary>
+		/// Raises the progress event when progress change
+		/// </summary>
+		/// <param name="progress">Progress.</param>
+		public virtual void OnProgress(float progress)
+		{
+		}
+
+		/// <summary>
+		/// Gets the data count.
+		/// default return 1
+		/// </summary>
+		/// <returns>The data count.</returns>
+		public virtual int GetDataCount()
+		{
+			if (null == lstData)return 1;
+			else return lstData.Count;
 		}
 
 		/// <summary>
